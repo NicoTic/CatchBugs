@@ -1,0 +1,51 @@
+buildscript {
+  repositories {
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
+
+  dependencies {
+    classpath "gradle.plugin.com.github.spotbugs:gradlePlugin:1.6.0"
+  }
+}
+
+apply plugin: "com.github.spotbugs"
+
+sourceSets{
+  main {
+    java.srcDirs = ['src/main/java']
+  }
+  generated{
+    java.srcDir "${buildDir}/generated/src/java/"
+  }
+}
+
+def lintReportDir = new File(project.buildDir, 'reports/lint')
+
+spotbugs {
+  toolVersion = '3.1.0-RC6'
+  ignoreFailures = false
+  reportsDir = lintReportDir
+  effort = "max"
+  reportLevel = "low"
+}
+
+
+task spotbugs(type: SpotBugsTask, dependsOn: 'assemble', group: 'verification') {
+  //spotbugsClasspath = buildscript.configurations.classPath
+  pluginClasspath = project.configurations.spotbugsPlugins
+  classes = files("$projectDir.absolutePath/build/intermediates/javac")
+  excludeFilter = file("$rootProject.projectDir/config/findbugs-android-exclude.xml")
+  source = fileTree('src/main/java')
+
+  // Only one report format is supported. Html is easier to read, so let's use that
+  // (xml is the one that's enabled by default).
+  reports {
+    xml.enabled = false
+    xml.withMessages = false
+    html.destination file("$project.buildDir/reports/spotbugs/spotbugs.html")
+  }
+
+  classpath = files()
+}
